@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打地鼠挑戰 - Whack-A-Mole!</title>
+    <title>打地鼠挑戰 2.0 - 機關槍模式!</title>
     <style>
         :root {
             --grass-color: #7cfc00;
             --soil-color: #8b4513;
             --mole-color: #a0522d;
             --ui-bg: rgba(255, 255, 255, 0.9);
+            --gun-cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"><path fill="%23FF0000" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,13.91 19.33,15.65 18.21,17.03L17.03,15.85C17.65,14.73 18,13.41 18,12A6,6 0 0,0 12,6C10.59,6 9.27,6.35 8.15,6.97L6.97,5.79C8.35,4.67 10.09,4 12,4M12,8A4,4 0 0,1 16,12C16,13 15.64,13.91 15.03,14.62L13.62,13.21C13.86,12.86 14,12.44 14,12A2,2 0 0,0 12,10C11.56,10 11.14,10.14 10.79,10.38L9.38,8.97C10.09,8.36 11,8 12,8M12,14A2,2 0 0,1 10,12C10,11.56 10.14,11.14 10.38,10.79L8.97,9.38C8.36,10.09 8,11 8,12A4,4 0 0,0 12,16C13,16 13.91,15.64 14.62,15.03L13.21,13.62C12.86,13.86 12.44,14 12,14M12,18A6,6 0 0,1 6,12C6,10.59 6.35,9.27 6.97,8.15L5.79,6.97C4.67,8.35 4,10.09 4,12A8,8 0 0,0 12,20C13.91,20 15.65,19.33 17.03,18.21L15.85,17.03C14.73,17.65 13.41,18 12,18Z"/></svg>') 24 24, crosshair;
+            --hammer-cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="%23666" d="M19,2L14,6.5V9H10V11H14V22L19,17.5V2Z"/></svg>') 16 16, auto;
+            --hammer-cursor-active: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" style="transform: rotate(-30deg); transform-origin: center;"><path fill="%23666" d="M19,2L14,6.5V9H10V11H14V22L19,17.5V2Z"/></svg>') 16 16, auto;
         }
 
         * {
@@ -26,18 +29,22 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="%23666" d="M19,2L14,6.5V9H10V11H14V22L19,17.5V2Z"/></svg>') 16 16, auto;
+            overflow: hidden;
+            transition: background 0.3s;
         }
 
-        body:active {
-            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" style="transform: rotate(-30deg); transform-origin: center;"><path fill="%23666" d="M19,2L14,6.5V9H10V11H14V22L19,17.5V2Z"/></svg>') 16 16, auto;
+        body.classic { cursor: var(--hammer-cursor); }
+        body.classic:active { cursor: var(--hammer-cursor-active); }
+        body.machine-gun { 
+            cursor: var(--gun-cursor); 
+            background: radial-gradient(circle, #ff9a9e, #fecfef);
         }
 
         h1 {
             color: #fff;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            margin-top: 20px;
-            font-size: 3rem;
+            margin: 10px 0;
+            font-size: 2.5rem;
         }
 
         .stats {
@@ -46,24 +53,24 @@
             border-radius: 50px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             display: flex;
-            gap: 40px;
-            font-size: 1.5rem;
+            gap: 20px;
+            font-size: 1.2rem;
             font-weight: bold;
             color: #333;
             margin-bottom: 20px;
+            z-index: 10;
         }
 
-        .score span, .timer span {
-            color: #e67e22;
-        }
+        .stats span { color: #e67e22; }
 
         .game-container {
-            width: 600px;
-            height: 400px;
+            width: 800px;
+            max-width: 95vw;
+            height: 500px;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 15px;
             perspective: 1000px;
         }
 
@@ -75,7 +82,6 @@
             box-shadow: inset 0 10px 0 0 rgba(0,0,0,0.5), 0 5px 0 0 #3a1c07;
         }
 
-        /* 地鼠 */
         .mole {
             position: absolute;
             top: 100%;
@@ -85,12 +91,11 @@
             height: 90%;
             background: var(--mole-color);
             border-radius: 50% 50% 0 0;
-            transition: top 0.2s ease-out;
-            cursor: pointer;
+            transition: top 0.1s ease-out;
             box-shadow: inset -5px 0 10px rgba(0,0,0,0.2);
         }
 
-        /* 地鼠的面部細節 */
+        /* 面部細節 */
         .mole::before {
             content: '';
             position: absolute;
@@ -114,75 +119,94 @@
             border-radius: 50%;
         }
 
-        .hole.up .mole {
-            top: 15%;
+        .hole.up .mole { top: 15%; }
+
+        /* 機關槍模式的地鼠眼睛會變紅 */
+        body.machine-gun .mole::before {
+            background: red;
+            box-shadow: 35px 0 0 red;
         }
 
-        /* 覆蓋層 (開始/結束) */
+        /* 擊中特效 */
+        .bonked {
+            animation: flash 0.1s;
+        }
+
+        @keyframes flash {
+            from { filter: brightness(3) contrast(2); }
+            to { filter: none; }
+        }
+
+        /* 覆蓋層 */
         #overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex; justify-content: center; align-items: center;
             z-index: 100;
         }
 
         .modal {
             background: white;
-            padding: 40px;
+            padding: 30px;
             border-radius: 20px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 400px;
         }
 
-        button {
-            background: #e67e22;
-            color: white;
+        .mode-selection {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
             border: none;
-            padding: 15px 40px;
-            font-size: 1.5rem;
+            padding: 15px 20px;
+            font-size: 1.2rem;
             border-radius: 10px;
             cursor: pointer;
-            transition: transform 0.1s, background 0.3s;
+            font-weight: bold;
+            transition: all 0.2s;
         }
 
-        button:hover {
-            background: #d35400;
-            transform: scale(1.05);
-        }
+        .btn-classic { background: #56ab2f; color: white; }
+        .btn-mg { background: #e74c3c; color: white; }
+        .btn:hover { transform: scale(1.1); filter: brightness(1.2); }
 
-        button:active {
-            transform: scale(0.95);
-        }
+        .hidden { display: none !important; }
 
-        .hidden {
-            display: none !important;
+        /* 震動動畫 */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            50% { transform: translate(-1px, 2px) rotate(1deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
+        .shake { animation: shake 0.1s infinite; }
 
-        @media (max-width: 650px) {
-            .game-container {
-                width: 90%;
-                height: 300px;
-            }
-            h1 { font-size: 2rem; }
-        }
     </style>
 </head>
-<body>
+<body class="classic">
 
-    <h1>打地鼠挑戰！</h1>
+    <h1>打地鼠挑戰 2.0</h1>
 
     <div class="stats">
-        <div class="score">分數: <span>0</span></div>
-        <div class="timer">剩餘時間: <span>30</span>s</div>
+        <div>模式: <span id="current-mode">經典</span></div>
+        <div>分數: <span id="score">0</span></div>
+        <div>時間: <span id="timer">30</span>s</div>
     </div>
 
-    <div class="game-container">
+    <div class="game-container" id="game-board">
+        <!-- 12 個洞 -->
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
         <div class="hole"><div class="mole"></div></div>
         <div class="hole"><div class="mole"></div></div>
         <div class="hole"><div class="mole"></div></div>
@@ -193,50 +217,74 @@
 
     <div id="overlay">
         <div class="modal">
-            <h2 id="modal-title">準備好挑戰了嗎？</h2>
-            <p id="modal-desc">點擊地鼠來得分，限時 30 秒！</p>
-            <button onclick="startGame()">開始遊戲</button>
+            <h2 id="modal-title">選擇你的武器</h2>
+            <div id="result-area" class="hidden">
+                <p id="final-score">最後得分: 0</p>
+            </div>
+            <div class="mode-selection">
+                <button class="btn btn-classic" onclick="initGame('classic')">
+                    🔨 經典模式
+                </button>
+                <button class="btn btn-mg" onclick="initGame('machine-gun')">
+                    🔫 機關槍模式
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
         const holes = document.querySelectorAll('.hole');
-        const scoreBoard = document.querySelector('.score span');
-        const timerBoard = document.querySelector('.timer span');
-        const moles = document.querySelectorAll('.mole');
+        const scoreBoard = document.getElementById('score');
+        const timerBoard = document.getElementById('timer');
+        const modeLabel = document.getElementById('current-mode');
         const overlay = document.getElementById('overlay');
-        const modalTitle = document.getElementById('modal-title');
-        const modalDesc = document.getElementById('modal-desc');
+        const resultArea = document.getElementById('result-area');
+        const finalScoreLabel = document.getElementById('final-score');
 
-        let lastHole;
-        let timeUp = false;
         let score = 0;
-        let countdown;
         let timeLeft = 30;
+        let timeUp = false;
+        let lastHole;
+        let currentMode = 'classic';
+        let isFiring = false;
+        let countdown;
 
-        // 產生隨機時間
+        // 偵測機關槍掃射 (mousedown)
+        window.addEventListener('mousedown', () => {
+            if (currentMode === 'machine-gun' && !timeUp) {
+                isFiring = true;
+                document.body.classList.add('shake');
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isFiring = false;
+            document.body.classList.remove('shake');
+        });
+
         function randomTime(min, max) {
             return Math.round(Math.random() * (max - min) + min);
         }
 
-        // 隨機選取一個洞穴
         function randomHole(holes) {
             const idx = Math.floor(Math.random() * holes.length);
             const hole = holes[idx];
-            if (hole === lastHole) {
-                return randomHole(holes);
-            }
+            if (hole === lastHole) return randomHole(holes);
             lastHole = hole;
             return hole;
         }
 
-        // 地鼠冒出來
         function peep() {
-            // 隨著分數增加，地鼠縮回去的速度會微幅變快
-            const difficultyOffset = Math.min(score * 5, 400); 
-            const time = randomTime(600 - difficultyOffset, 1200 - difficultyOffset);
+            let time;
+            if (currentMode === 'machine-gun') {
+                // 機關槍模式：超快頻率
+                time = randomTime(150, 450);
+            } else {
+                // 經典模式：正常頻率
+                time = randomTime(600, 1200);
+            }
+
             const hole = randomHole(holes);
-            
             hole.classList.add('up');
             
             setTimeout(() => {
@@ -245,43 +293,76 @@
             }, time);
         }
 
-        function startGame() {
-            // 初始化
+        function initGame(mode) {
+            currentMode = mode;
             score = 0;
             timeLeft = 30;
+            timeUp = false;
+            
             scoreBoard.textContent = 0;
             timerBoard.textContent = timeLeft;
-            timeUp = false;
+            modeLabel.textContent = mode === 'classic' ? '經典' : '機關槍';
+            
+            document.body.className = mode; // 切換游標與背景
             overlay.classList.add('hidden');
 
+            // 啟動地鼠
             peep();
+            // 如果是機關槍模式，同時啟動兩個地鼠循環，讓頻率翻倍
+            if (mode === 'machine-gun') {
+                setTimeout(peep, 200);
+                setTimeout(peep, 400);
+            }
 
-            // 計時器
             countdown = setInterval(() => {
                 timeLeft--;
                 timerBoard.textContent = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(countdown);
-                    endGame();
-                }
+                if (timeLeft <= 0) endGame();
             }, 1000);
         }
 
         function endGame() {
             timeUp = true;
-            modalTitle.textContent = "遊戲結束！";
-            modalDesc.textContent = `你的最終分數是 ${score} 分！`;
+            clearInterval(countdown);
+            document.body.classList.remove('shake');
+            
+            finalScoreLabel.textContent = `你在 ${modeLabel.textContent} 模式獲得了 ${score} 分！`;
+            resultArea.classList.remove('hidden');
             overlay.classList.remove('hidden');
+            document.getElementById('modal-title').textContent = "戰鬥結束！";
         }
 
         function bonk(e) {
-            if(!e.isTrusted) return; // 防止作弊（模擬點擊）
+            // isTrusted 確保不是程式自動觸發
+            if (!e.isTrusted && currentMode === 'classic') return; 
+            
+            const mole = this;
+            const hole = mole.parentNode;
+            
+            if (!hole.classList.contains('up')) return;
+
             score++;
-            this.parentNode.classList.remove('up');
+            hole.classList.remove('up');
             scoreBoard.textContent = score;
+
+            // 特效
+            mole.classList.add('bonked');
+            setTimeout(() => mole.classList.remove('bonked'), 100);
         }
 
-        moles.forEach(mole => mole.addEventListener('click', bonk));
+        // 綁定地鼠事件
+        document.querySelectorAll('.mole').forEach(mole => {
+            // 經典點擊
+            mole.addEventListener('mousedown', bonk);
+            
+            // 機關槍掃射 (滑鼠移入且正在開火)
+            mole.addEventListener('mouseenter', function(e) {
+                if (currentMode === 'machine-gun' && isFiring) {
+                    bonk.call(this, {isTrusted: true});
+                }
+            });
+        });
+
     </script>
 </body>
 </html>
